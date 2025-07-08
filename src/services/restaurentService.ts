@@ -10,6 +10,10 @@ export const getRestaurents = async (
 
   try {
     const restaurents = await prisma.restaurent.findMany({
+      include: {
+        Owner: true,
+        Employees: true,
+      },
       skip,
       take: pageSize,
     });
@@ -24,6 +28,10 @@ export const getRestaurent = async (id: number): Promise<Restaurent | null> => {
   try {
     return await prisma.restaurent.findUnique({
       where: { id },
+      include: {
+        Owner: true,
+        Employees: true,
+      },
     });
   } catch (error) {
     console.error(`Error fetching restaurant with id ${id}:`, error);
