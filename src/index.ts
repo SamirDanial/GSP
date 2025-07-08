@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+
 const bodyParser = require("body-parser");
 
 const app = express();
@@ -7,7 +8,7 @@ const port = process.env.PORT || 3000;
 // restaurents related routes
 import {
   createRestaurent,
-  deleteRetaurent,
+  deleteRestaurent,
   getRestaurent,
   getRestaurents,
   updateRestaurent,
@@ -36,62 +37,101 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Restaurent staff
 
-app.post("/createRestaurent", async (req: Request, res: any) => {
-  const { name, address } = await req.body;
+app.post("/restaurents", async (req: Request, res: Response) => {
+  try {
+    const { name, address } = req.body;
 
-  const createdRestaurent = await createRestaurent(name, address);
+    if (!name || !address) {
+      res.status(400).json({ message: "Name and address are required." });
+      return;
+    }
 
-  return res.json(createdRestaurent);
+    const created = await createRestaurent(name, address);
+    res.status(201).json(created);
+  } catch (error) {
+    console.error("Error creating restaurant:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
-app.put("/updateRestaurent", async (req: Request, res: any) => {
-  const { id } = req.query;
+// Update
+app.put("/restaurents/:id", async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const { name, address } = req.body;
 
-  const { name, address } = req.body;
+    if (isNaN(id) || (!name && !address)) {
+      res.status(400).json({ message: "Invalid input" });
+      return;
+    }
 
-  if (!id || !name || !address) return;
-
-  const updatedRestaurent = await updateRestaurent(+id, name, address);
-
-  return res.json(updatedRestaurent);
+    const updated = await updateRestaurent(id, name, address);
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error("Error updating restaurant:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
-app.get("/getRestaurents", async (req: Request, res: any) => {
-  const { page, pageSize } = req.query;
+// Get all with pagination
+app.get("/restaurents", async (req: Request, res: Response) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const pageSize = Number(req.query.pageSize) || 10;
 
-  if (!page || !pageSize) return;
+    if (page < 1 || pageSize < 1) {
+      res.status(400).json({ message: "Invalid pagination params." });
+      return;
+    }
 
-  const restaurents = await getRestaurents(+page, +pageSize);
-
-  return res.json(restaurents);
+    const data = await getRestaurents(page, pageSize);
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("Error getting restaurants:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
-app.get("/getRestaurent", async (req: Request, res: any) => {
-  console.log("Get Restaurent");
-  const { id } = req.query;
+// Get one
+app.get("/restaurents/:id", async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
 
-  if (!id) return;
+    if (isNaN(id)) {
+      res.status(400).json({ message: "Invalid ID." });
+      return;
+    }
 
-  const restaurent = await getRestaurent(+id);
+    const data = await getRestaurent(id);
 
-  return res.json(restaurent);
+    if (!data) {
+      res.status(404).json({ message: "Restaurant not found." });
+      return;
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("Error getting restaurant:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
-app.delete("/deleteRestaurent", async (req: Request, res: any) => {
-  const { id } = req.query;
+// Delete
+app.delete("/restaurents/:id", async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
 
-  if (!id) return;
+    if (isNaN(id)) {
+      res.status(400).json({ message: "Invalid ID." });
+      return;
+    }
 
-  const deletedRestaurent = await deleteRetaurent(+id);
-
-  return res.json(deletedRestaurent);
-});
-
-//
-
-app.get("/", (req: Request, res: Response) => {
-  console.log(req.body);
-  res.send("Hello from TypeScript Express!");
+    const deleted = await deleteRestaurent(id);
+    res.status(200).json(deleted);
+  } catch (error) {
+    console.error("Error deleting restaurant:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
 app.listen(port, () => {
